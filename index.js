@@ -2,7 +2,7 @@ var steam = require("steam"),
     util = require("util"),
     fs = require("fs"),
     bot = new steam.SteamClient(),
-    appID = [];
+    appID = []; //WHERE THE MAGIC HAPPENS FOR NOW
 
 global.config = require("./config");
 
