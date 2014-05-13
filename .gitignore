@@ -3,4 +3,6 @@ config.js
 node_modules
 configs
 sentry
-test
+test/*
+test.bat
+cookie.txt
