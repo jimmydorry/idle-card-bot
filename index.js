@@ -77,7 +77,9 @@ var onSteamLogOn = function onSteamLogOn() {
                         }
                         util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
                         numTimesNoGame++;
-                        getCookie(null);
+                        getCookie(function(){
+                            util.log('Cookie set.');
+                        });
                     }
                     else {
                         util.log('Changing idle game to: ' + gameToIdle);
@@ -94,6 +96,7 @@ var onSteamLogOn = function onSteamLogOn() {
         }
 
         getCookie(function () {
+            util.log('Cookie set.');
             cardIdleMain();
         });
 
