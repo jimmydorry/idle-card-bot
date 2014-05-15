@@ -8,64 +8,98 @@ var request = require('request')
 
 global.config = require("./config");
 
-var onSteamLogOn = function onSteamLogOn(){
+var onSteamLogOn = function onSteamLogOn() {
         bot.setPersonaState(steam.EPersonaState.Busy); // to display your bot's status as "Online"
         bot.setPersonaName(config.steam_name); // to change its nickname
+
         util.log("Logged on.");
 
-        bot.webLogOn(function(cookies){
-            util.log("Received cookies.");
-            //util.log(cookies);
+        var game_to_idle = 0;
+        var url = config.badge_url;
+        var j = request.jar();
 
-            //var cookie_string = cookies.toString();
-            var cookie_string_split = cookies.toString().split(',');
-            var url = config.badge_url;
-            var j = request.jar();
-            var game_to_idle = 0;
+        var getCookie = function (callback) {
+            bot.webLogOn(function (cookie) {
+                util.log("Grabbing new cookie.");
+                //util.log(cookie);
 
-            cookie_string_split.every(function(value){
-                util.log(value);
-                j.setCookie(request.cookie(value), url);
-                return 1;
-            });
+                var cookie_string_split = cookie.toString().split(',');
 
-            var findGameToIdle = function(callback) {
-                request({url: url, jar: j}, function (err, response, body) {
-                    game_to_idle = 0;
-                    //fs.writeFileSync('test.html', body);
-
-                    if (err) throw err;
-                    var $ = cheerio.load(body);
-                    $('span.progress_info_bold').each(function () {
-                        if (($(this).text() !== 'undefined')
-                            && ($(this).text() !== null)
-                            && ($(this).text() != 'No card drops remaining')) {
-
-                            var num_drops = $(this).text().replace(' card drops remaining', '');
-                            game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
-                            //util.log(game_to_idle + ' || ' + num_drops);
-                        }
-                    });
-                    callback(game_to_idle);
+                cookie_string_split.every(function (value) {
+                    util.log(value);
+                    j.setCookie(request.cookie(value), url);
+                    return 1;
                 });
-            };
 
-            var gameToIdle_index = 0;
-            setInterval(function () {
-                util.log('Re-enumerating remaining drops');
-                findGameToIdle(function(gameToIdle){
-                    util.log('Finished poll');
-                    if(gameToIdle != gameToIdle_index){
-                        util.log('Changing idle game to: '+gameToIdle);
+                callback();
+            });
+        };
+
+        var findGameToIdle = function (callback) {
+            //util.log('Re-enumerating remaining drops');
+            request({url: url, jar: j}, function (err, response, body) {
+                if (err) throw err;
+
+                game_to_idle = 0;
+                fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
+
+                var $ = cheerio.load(body);
+                $('span.progress_info_bold').each(function () {
+                    if (($(this).text() !== 'undefined')
+                        && ($(this).text() !== null)
+                        && ($(this).text() != 'No card drops remaining')) {
+
+                        //var num_drops = $(this).text().replace(' card drops remaining', '');
+                        game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
+                        //util.log(game_to_idle + ' || ' + num_drops);
+                    }
+                });
+
+                callback(game_to_idle);
+            });
+        };
+
+        var gameToIdle_index = 0;
+        var numTimesNoGame = 0;
+
+        function cardIdleMain() {
+            findGameToIdle(function (gameToIdle) {
+                //util.log('Finished poll');
+                if (gameToIdle != gameToIdle_index) {
+                    if (gameToIdle == 0) {
+                        util.log('No game to idle.');
+                        if (numTimesNoGame > 20) {
+                            util.log('Still nothing. Time to quit.');
+                            process.exit(1);
+                        }
+                        else if (numTimesNoGame == 0) {
+                            bot.gamesPlayed([gameToIdle]);
+                        }
+                        util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
+                        numTimesNoGame++;
+                        getCookie(null);
+                    }
+                    else {
+                        util.log('Changing idle game to: ' + gameToIdle);
                         bot.gamesPlayed([gameToIdle]);
                         gameToIdle_index = gameToIdle;
+                        numTimesNoGame = 0;
                     }
-                    else{
-                        util.log('Still idling: '+gameToIdle);
-                    }
-                });
-            }, config.badge_check_idle);
+                }
+                else {
+                    util.log('Still idling: ' + gameToIdle);
+                    numTimesNoGame = 0;
+                }
+            });
+        }
+
+        getCookie(function () {
+            cardIdleMain();
         });
+
+        setInterval(function () {
+            cardIdleMain();
+        }, config.badge_check_idle);
     },
     onSteamSentry = function onSteamSentry(sentry) {
         util.log("Received sentry.");
@@ -74,21 +108,21 @@ var onSteamLogOn = function onSteamLogOn(){
     onSteamServers = function onSteamServers(servers) {
         util.log("Received servers.");
         fs.writeFile('servers', JSON.stringify(servers));
-    },
-    onWebSessionID = function onWebSessionID(webSessionID) {
-        util.log("Received web session id.");
-        // steamTrade.sessionID = webSessionID;
-        /*bot.webLogOn(function onWebLogonSetTradeCookies(cookies) {
-            util.log("Received cookies.");
-            util.log(cookies);
-            fs.writeFileSync('cookie.txt', cookies);
-
-           //for (var i = 0; i < cookies.length; i++) {
-                // steamTrade.setCookie(cookies[i]);
-                //util.log(i+" | "+cookies[i]);
-            //}
-        });*/
     };
+//,onWebSessionID = function onWebSessionID(webSessionID) {
+//util.log("Received web session id.");
+// steamTrade.sessionID = webSessionID;
+/*bot.webLogOn(function onWebLogonSetTradeCookies(cookies) {
+ util.log("Received cookies.");
+ util.log(cookies);
+ fs.writeFileSync('cookie.txt', cookies);
+
+ //for (var i = 0; i < cookies.length; i++) {
+ // steamTrade.setCookie(cookies[i]);
+ //util.log(i+" | "+cookies[i]);
+ //}
+ });*/
+//};
 
 // Login, only passing authCode if it exists
 var logOnDetails = {
@@ -101,5 +135,5 @@ if (sentry.length) logOnDetails.shaSentryfile = sentry;
 bot.logOn(logOnDetails);
 bot.on("loggedOn", onSteamLogOn)
     .on('sentry', onSteamSentry)
-    .on('servers', onSteamServers)
-    .on('webSessionID', onWebSessionID);
+    .on('servers', onSteamServers);
+// .on('webSessionID', onWebSessionID);
