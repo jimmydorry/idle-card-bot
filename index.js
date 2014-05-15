@@ -26,7 +26,7 @@ var onSteamLogOn = function onSteamLogOn() {
                 var cookie_string_split = cookie.toString().split(',');
 
                 cookie_string_split.every(function (value) {
-                    util.log(value);
+                    //util.log(value);
                     j.setCookie(request.cookie(value), url);
                     return 1;
                 });
@@ -36,6 +36,7 @@ var onSteamLogOn = function onSteamLogOn() {
         };
 
         var findGameToIdle = function (callback) {
+            var numGamesFound = 0;
             //var gameToIdleTemp = game_to_idle;
             //util.log('Re-enumerating remaining drops');
             request({url: url, jar: j}, function (err, response, body) {
@@ -46,18 +47,22 @@ var onSteamLogOn = function onSteamLogOn() {
                     callback(game_to_idle);
                 }
                 else {
-                    fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
+                    //fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
 
                     var doBadgeProfileReq = function (callback2) {
                         var $ = cheerio.load(body);
                         $('span.progress_info_bold').each(function () {
                             if (($(this).text() !== 'undefined')
-                                && ($(this).text() !== null)
-                                && ($(this).text() != 'No card drops remaining')) {
+                             && ($(this).text() !== null)
+                             && ($(this).text() != 'No card drops remaining')) {
 
+                                numGamesFound++;
                                 //var num_drops = $(this).text().replace(' card drops remaining', '');
-                                game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
-                                //util.log(game_to_idle + ' || ' + num_drops);
+
+                                if(numGamesFound == 1){
+                                    game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
+                                    //util.log(game_to_idle + ' || ' + num_drops);
+                                }
                             }
                         });
                         callback2();
