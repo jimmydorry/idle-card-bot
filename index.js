@@ -36,26 +36,37 @@ var onSteamLogOn = function onSteamLogOn() {
         };
 
         var findGameToIdle = function (callback) {
+            //var gameToIdleTemp = game_to_idle;
             //util.log('Re-enumerating remaining drops');
             request({url: url, jar: j}, function (err, response, body) {
-                if (err) throw err;
-
                 game_to_idle = 0;
-                fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
+                //if (err) throw err;
+                if (err) {
+                    util.log('Problem grabbing card status.');
+                    callback(game_to_idle);
+                }
+                else {
+                    fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
 
-                var $ = cheerio.load(body);
-                $('span.progress_info_bold').each(function () {
-                    if (($(this).text() !== 'undefined')
-                        && ($(this).text() !== null)
-                        && ($(this).text() != 'No card drops remaining')) {
+                    var doBadgeProfileReq = function(callback2){
+                        var $ = cheerio.load(body);
+                        $('span.progress_info_bold').each(function () {
+                            if (($(this).text() !== 'undefined')
+                                && ($(this).text() !== null)
+                                && ($(this).text() != 'No card drops remaining')) {
 
-                        //var num_drops = $(this).text().replace(' card drops remaining', '');
-                        game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
-                        //util.log(game_to_idle + ' || ' + num_drops);
-                    }
-                });
+                                //var num_drops = $(this).text().replace(' card drops remaining', '');
+                                game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
+                                //util.log(game_to_idle + ' || ' + num_drops);
+                            }
+                        });
+                        callback2();
+                    };
 
-                callback(game_to_idle);
+                    doBadgeProfileReq(function(){
+                        callback(game_to_idle);
+                    });
+                }
             });
         };
 
@@ -68,7 +79,7 @@ var onSteamLogOn = function onSteamLogOn() {
                 if (gameToIdle != gameToIdle_index) {
                     if (gameToIdle == 0) {
                         util.log('No game to idle.');
-                        if (numTimesNoGame > 20) {
+                        if (numTimesNoGame > 30) {
                             util.log('Still nothing. Time to quit.');
                             process.exit(1);
                         }
@@ -77,7 +88,7 @@ var onSteamLogOn = function onSteamLogOn() {
                         }
                         util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
                         numTimesNoGame++;
-                        getCookie(function(){
+                        getCookie(function () {
                             util.log('Cookie set.');
                         });
                     }
