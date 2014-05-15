@@ -48,7 +48,7 @@ var onSteamLogOn = function onSteamLogOn() {
                 else {
                     fs.writeFileSync('test.html', body); //SO WE CAN SEE WHAT IT SEES
 
-                    var doBadgeProfileReq = function(callback2){
+                    var doBadgeProfileReq = function (callback2) {
                         var $ = cheerio.load(body);
                         $('span.progress_info_bold').each(function () {
                             if (($(this).text() !== 'undefined')
@@ -63,7 +63,7 @@ var onSteamLogOn = function onSteamLogOn() {
                         callback2();
                     };
 
-                    doBadgeProfileReq(function(){
+                    doBadgeProfileReq(function () {
                         callback(game_to_idle);
                     });
                 }
@@ -77,16 +77,17 @@ var onSteamLogOn = function onSteamLogOn() {
             findGameToIdle(function (gameToIdle) {
                 //util.log('Finished poll');
                 if (gameToIdle != gameToIdle_index) {
+                    gameToIdle_index = gameToIdle;
                     if (gameToIdle == 0) {
                         util.log('No game to idle.');
-                        if (numTimesNoGame > 30) {
+                        if (numTimesNoGame > 20) {
                             util.log('Still nothing. Time to quit.');
                             process.exit(1);
                         }
-                        else if (numTimesNoGame == 0) {
+                        else if (numTimesNoGame > 10) {
                             bot.gamesPlayed([gameToIdle]);
                         }
-                        util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
+                        //util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
                         numTimesNoGame++;
                         getCookie(function () {
                             util.log('Cookie set.');
@@ -95,13 +96,11 @@ var onSteamLogOn = function onSteamLogOn() {
                     else {
                         util.log('Changing idle game to: ' + gameToIdle);
                         bot.gamesPlayed([gameToIdle]);
-                        gameToIdle_index = gameToIdle;
                         numTimesNoGame = 0;
                     }
                 }
                 else {
                     util.log('Still idling: ' + gameToIdle);
-                    numTimesNoGame = 0;
                 }
             });
         }
