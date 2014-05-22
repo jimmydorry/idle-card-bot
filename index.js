@@ -104,6 +104,11 @@ var onSteamLogOn = function onSteamLogOn() {
                         numTimesNoGame = 0;
                     }
                 }
+		else if(numTimesNoGame > 0){
+			util.log('Changing idle game to: ' + gameToIdle);
+                        bot.gamesPlayed([gameToIdle]);
+			numTimesNoGame = 0;
+		}
                 else {
                     util.log('Still idling: ' + gameToIdle);
                 }
