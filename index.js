@@ -53,13 +53,13 @@ var onSteamLogOn = function onSteamLogOn() {
                         var $ = cheerio.load(body);
                         $('span.progress_info_bold').each(function () {
                             if (($(this).text() !== 'undefined')
-                             && ($(this).text() !== null)
-                             && ($(this).text() != 'No card drops remaining')) {
+                                && ($(this).text() !== null)
+                                && ($(this).text() != 'No card drops remaining')) {
 
                                 numGamesFound++;
                                 //var num_drops = $(this).text().replace(' card drops remaining', '');
 
-                                if(numGamesFound == 1){
+                                if (numGamesFound == 1) {
                                     game_to_idle = $(this).prev().parent().children('div.badge_title_playgame').children('a.btn_green_white_innerfade').attr('href').replace('steam://run/', '');
                                     //util.log(game_to_idle + ' || ' + num_drops);
                                 }
@@ -82,15 +82,13 @@ var onSteamLogOn = function onSteamLogOn() {
             findGameToIdle(function (gameToIdle) {
                 //util.log('Finished poll');
                 if (gameToIdle != gameToIdle_index) {
-                    gameToIdle_index = gameToIdle;
                     if (gameToIdle == 0) {
-                        util.log('No game to idle.');
-                        if (numTimesNoGame > 20) {
-                            util.log('Still nothing. Time to quit.');
-                            process.exit(1);
-                        }
-                        else if (numTimesNoGame > 10) {
+                        if (numTimesNoGame > 12) {
                             bot.gamesPlayed([gameToIdle]);
+                            util.log('No game to idle for ' + ((config.badge_check_idle * numTimesNoGame) / 60000) + 'mins');
+                        }
+                        else {
+                            util.log('No game to idle.');
                         }
                         //util.log('Getting a new cookie and waiting until next check. Attempt: ' + numTimesNoGame);
                         numTimesNoGame++;
@@ -99,16 +97,17 @@ var onSteamLogOn = function onSteamLogOn() {
                         });
                     }
                     else {
+                        gameToIdle_index = gameToIdle;
                         util.log('Changing idle game to: ' + gameToIdle);
                         bot.gamesPlayed([gameToIdle]);
                         numTimesNoGame = 0;
                     }
                 }
-		else if(numTimesNoGame > 0){
-			util.log('Changing idle game to: ' + gameToIdle);
-                        bot.gamesPlayed([gameToIdle]);
-			numTimesNoGame = 0;
-		}
+                else if (numTimesNoGame > 12) {
+                    util.log('Changing idle game to: ' + gameToIdle);
+                    bot.gamesPlayed([gameToIdle]);
+                    numTimesNoGame = 0;
+                }
                 else {
                     util.log('Still idling: ' + gameToIdle);
                 }
