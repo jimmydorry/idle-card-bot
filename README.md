@@ -12,5 +12,5 @@ Idle bot for trading cards. This bot will check to see what games you have card 
 
 ### Gotcha's
 * node-steam library relies on https://github.com/Medium/ursa . This library has extra requirements (like python). Follow its install instructions before installing this app.
-* If you idle and don't see your game status updating in your main client, set your main client to away
+* If you idle and don't see your game status updating in your main client, set your main client to away (http://i.imgur.com/X8i1SUr.png)
 * When ever the bot can't reach the steamcommunity (time out, etc.), it will say it has no game to idle. Don't worry, it has a few retry attempts before it actually stops idling. Simply leave it do its thing.
