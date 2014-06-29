@@ -54,6 +54,7 @@ var onSteamLogOn = function onSteamLogOn() {
                         $('span.progress_info_bold').each(function () {
                             if (($(this).text() !== 'undefined')
                                 && ($(this).text() !== null)
+                                && ($(this).text().indexOf("task") == -1)
                                 && ($(this).text() != 'No card drops remaining')) {
 
                                 numGamesFound++;
